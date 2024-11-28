@@ -34,5 +34,5 @@ __all__ = [
     'VisorEntry',
     'VisorFile',
     'VisorWriter',
-    'VisorReader'
+    'VisorReader',
 ]

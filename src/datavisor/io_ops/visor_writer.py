@@ -3,26 +3,19 @@
 import os
 import json
 from typing import List
-
-import os
-import sys
-
-src_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(src_path)
-
-from config import Config, ImageEntry, AnnotEntry
-from file_format import VisorFile
-from config.exceptions import IOError
+from datavisor.config import Config
+from datavisor.file_format.visor_file import VisorFile
+from datavisor.config.exceptions import IOError
 
 class VisorWriter:
     def __init__(self, config: Config, output_dir: str):
         self.config = config
         self.output_dir = output_dir
         self.current_file_index = 0
-        self.current_visor_file = VisorFile(config)
         self.total_entries = 0
         self.files_written = []
         self._ensure_output_dir_exists()
+        self.current_visor_file = None
 
     def _ensure_output_dir_exists(self):
         try:
@@ -32,28 +25,27 @@ class VisorWriter:
 
     def write_entries(self, entries: List):
         for entry in entries:
-            if len(self.current_visor_file) >= self.config.max_entries_per_file:
-                self._write_current_file()
-                self.current_file_index += 1
-                self.current_visor_file = VisorFile(self.config)
+            if self.current_visor_file is None:
+                # Start a new file
+                filename = f"visor_data_{self.current_file_index}.visor"
+                filepath = os.path.join(self.output_dir, filename)
+                self.current_visor_file = VisorFile(self.config, filepath)
+                self.files_written.append(filename)
 
             self.current_visor_file.add_entry(entry)
             self.total_entries += 1
 
-        # Write any remaining entries
-        if len(self.current_visor_file) > 0:
-            self._write_current_file()
+            if self.current_visor_file.entry_count >= self.config.max_entries_per_file:
+                # Finalize current file
+                self.current_visor_file.finalize()
+                self.current_file_index += 1
+                self.current_visor_file = None
 
-    def _write_current_file(self):
-        filename = f"visor_data_{self.current_file_index}.visor"
-        filepath = os.path.join(self.output_dir, filename)
-
-        try:
-            with open(filepath, 'wb') as f:
-                self.current_visor_file.write(f)
-            self.files_written.append(filename)
-        except Exception as e:
-            raise IOError(f"Failed to write Visor file: {str(e)}")
+        # Finalize any remaining file
+        if self.current_visor_file is not None:
+            self.current_visor_file.finalize()
+            self.current_file_index += 1
+            self.current_visor_file = None
 
     def finalize(self):
         # Write a metadata file with information about the dataset
@@ -84,6 +76,5 @@ class VisorWriter:
 
         # Reset the writer state
         self.current_file_index = 0
-        self.current_visor_file = VisorFile(self.config)
         self.total_entries = 0
         self.files_written = []
