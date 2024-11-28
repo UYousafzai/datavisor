@@ -1,3 +1,5 @@
+# src/datavisor/io_ops/visor_reader.py
+
 import os
 from typing import List, Iterator, Optional
 
@@ -8,7 +10,7 @@ import json
 src_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(src_path)
 
-from config import Config, Entry, ImageDimensions
+from config import Config, ImageEntry, AnnotEntry, ImageDimensions
 from file_format import VisorFile
 from config.exceptions import IOError
 
@@ -30,7 +32,7 @@ class VisorReader:
     def _create_config_from_metadata(self) -> Config:
         meta_config = self.metadata['config']
         image_dimensions = None
-        if not meta_config['preserve_original_size']:
+        if not meta_config['preserve_original_size'] and meta_config['image_dimensions'] is not None:
             image_dimensions = ImageDimensions(
                 width=meta_config['image_dimensions']['width'],
                 height=meta_config['image_dimensions']['height']
@@ -56,14 +58,14 @@ class VisorReader:
             print(f"Warning: No valid .visor files found in metadata")
         return visor_files
 
-    def __iter__(self) -> Iterator[Entry]:
+    def __iter__(self) -> Iterator:
         for visor_file in self.visor_files:
             yield from visor_file
 
     def __len__(self) -> int:
         return self.total_entries
 
-    def get_entry(self, index: int) -> Optional[Entry]:
+    def get_entry(self, index: int) -> Optional:
         if index < 0 or index >= self.total_entries:
             return None
 
@@ -78,14 +80,20 @@ class VisorReader:
         entry = self.get_entry(index)
         if entry is None:
             return None
-        return {
-            'original_name': entry.metadata.original_name,
-            'original_format': entry.metadata.original_format,
-            'original_width': entry.metadata.original_width,
-            'original_height': entry.metadata.original_height,
-            'word_count': entry.metadata.word_count,
-            'dimensions': (entry.dimensions.width, entry.dimensions.height),
-        }
+        if isinstance(entry, ImageEntry):
+            return {
+                'original_name': entry.metadata.original_name,
+                'original_format': entry.metadata.original_format,
+                'original_width': entry.metadata.original_width,
+                'original_height': entry.metadata.original_height,
+                'word_count': entry.metadata.word_count,
+                'dimensions': (entry.dimensions.width, entry.dimensions.height),
+            }
+        elif isinstance(entry, AnnotEntry):
+            return {
+                'annotation_keys': list(entry.annotation.keys()),
+                'ocr_data_present': entry.ocr_data is not None
+            }
 
     def print_summary(self):
         print(f"Dataset summary:")

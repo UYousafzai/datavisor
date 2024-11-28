@@ -7,11 +7,12 @@ from .config import (
     ConfigurationError,
     ProcessingError,
     ErrorLogger,
-    Entry,
+    ImageEntry,
+    AnnotEntry,
     EntryMetadata,
     ImageDimensions
 )
-from .data_handler import BaseDataHandler, ImageHandler
+from .data_handler import BaseDataHandler, ImageHandler, AnnotationHandler
 from .file_format import VisorHeader, VisorEntry, VisorFile
 from .io_ops import VisorWriter, VisorReader
 
@@ -22,11 +23,13 @@ __all__ = [
     'ConfigurationError',
     'ProcessingError',
     'ErrorLogger',
-    'Entry',
+    'ImageEntry',
+    'AnnotEntry',
     'EntryMetadata',
     'ImageDimensions',
     'BaseDataHandler',
     'ImageHandler',
+    'AnnotationHandler',
     'VisorHeader',
     'VisorEntry',
     'VisorFile',

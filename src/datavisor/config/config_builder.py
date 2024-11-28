@@ -1,3 +1,5 @@
+# src/datavisor/config/config_builder.py
+
 from .config import Config, ImageDimensions
 from .exceptions import ConfigurationError
 
@@ -12,6 +14,8 @@ class ConfigBuilder:
         self._cache_size = 100
 
     def set_data_type(self, data_type: str):
+        if data_type not in ['image', 'text', 'annotation']:
+            raise ValueError("data_type must be 'image', 'text', or 'annotation'")
         self._data_type = data_type
         return self
 
@@ -32,7 +36,7 @@ class ConfigBuilder:
         return self
 
     def build(self) -> Config:
-        if not all([self._data_type, self._image_dimensions, self._max_entries_per_file]):
+        if not all([self._data_type, self._max_entries_per_file]):
             raise ConfigurationError("Missing required configuration parameters")
 
         config = Config(

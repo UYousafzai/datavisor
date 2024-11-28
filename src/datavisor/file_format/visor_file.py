@@ -1,3 +1,5 @@
+# src/datavisor/file_format/visor_file.py
+
 import io
 import struct
 
@@ -10,7 +12,7 @@ sys.path.append(src_path)
 from typing import List, Iterator
 from .visor_header import VisorHeader
 from .visor_entry import VisorEntry
-from config import Entry, Config
+from datavisor.config import Config
 
 class VisorFile:
     def __init__(self, config: Config):
@@ -18,14 +20,14 @@ class VisorFile:
         self.header = None
         self.entries = []
 
-    def add_entry(self, entry: Entry):
+    def add_entry(self, entry):
         if len(self.entries) >= self.config.max_entries_per_file:
             raise ValueError("Maximum number of entries reached for this file")
         self.entries.append(entry)
 
     def write(self, file_obj: io.IOBase):
         # Calculate metadata size (assume it's constant for all entries)
-        metadata_size = VisorEntry.size(self.entries[0]) - len(self.entries[0].data) - struct.calcsize(VisorEntry.ENTRY_FORMAT)
+        metadata_size = 0  # Not used in this context
 
         # Create and write header
         self.header = VisorHeader(self.config.image_dimensions, len(self.entries), metadata_size)
@@ -44,20 +46,26 @@ class VisorFile:
         visor_file.header = VisorHeader.unpack(header_data)
 
         # Read entries
-        for _ in range(visor_file.header.entry_count):
-            entry_data = file_obj.read(struct.calcsize(VisorEntry.ENTRY_FORMAT))
-            image_data_size, metadata_size, ocr_data_size, _ = struct.unpack(VisorEntry.ENTRY_FORMAT, entry_data)
-            
-            total_entry_size = struct.calcsize(VisorEntry.ENTRY_FORMAT) + image_data_size + metadata_size + ocr_data_size
-            file_obj.seek(-struct.calcsize(VisorEntry.ENTRY_FORMAT), io.SEEK_CUR)
-            
+        while True:
+            entry_header_size = struct.calcsize(VisorEntry.ENTRY_FORMAT)
+            entry_header = file_obj.read(entry_header_size)
+            if not entry_header:
+                break  # End of file
+
+            # Unpack entry header to determine sizes
+            sizes = struct.unpack(VisorEntry.ENTRY_FORMAT, entry_header)
+            data_size, metadata_size, ocr_data_size, _, entry_type = sizes
+
+            total_entry_size = entry_header_size + data_size + metadata_size + ocr_data_size
+            file_obj.seek(-entry_header_size, io.SEEK_CUR)
+
             entry_data = file_obj.read(total_entry_size)
             entry = VisorEntry.unpack(entry_data)
             visor_file.entries.append(entry)
 
         return visor_file
 
-    def __iter__(self) -> Iterator[Entry]:
+    def __iter__(self) -> Iterator:
         return iter(self.entries)
 
     def __len__(self) -> int:

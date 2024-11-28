@@ -1,5 +1,7 @@
+# src/datavisor/config/config.py
+
 from dataclasses import dataclass
-from typing import List, Union, Optional 
+from typing import List, Union, Optional
 
 @dataclass
 class ImageDimensions:
@@ -13,7 +15,7 @@ class ImageDimensions:
 @dataclass
 class Config:
     """Configuration class for Visor library."""
-    data_type: str  # 'image' or 'text'
+    data_type: str  # 'image', 'text', or 'annotation'
     max_entries_per_file: int  # Maximum number of entries per .visor file
     image_dimensions: Optional[ImageDimensions] = None  # Dimensions for resizing images, None to preserve original size
     compression: bool = False  # Whether to use compression
@@ -21,8 +23,8 @@ class Config:
 
     def validate(self):
         """Validate the configuration."""
-        if self.data_type not in ['image', 'text']:
-            raise ValueError("data_type must be either 'image' or 'text'")
+        if self.data_type not in ['image', 'text', 'annotation']:
+            raise ValueError("data_type must be 'image', 'text', or 'annotation'")
         if self.image_dimensions is not None:
             self.image_dimensions.validate()
         if self.max_entries_per_file <= 0:
@@ -51,17 +53,17 @@ class EntryMetadata:
             raise ValueError("original_width and original_height must be positive integers")
         if self.word_count < 0:
             raise ValueError("word_count must be a non-negative integer")
-        
+
 @dataclass
-class Entry:
-    """Represents an entry in the Visor file."""
+class ImageEntry:
+    """Represents an image entry in the Visor file."""
     data: bytes  # The actual image data
     metadata: EntryMetadata
     dimensions: ImageDimensions
     ocr_data: List[List[Union[str, List[float]]]]  # List of words, each word is a list containing text and potentially bbox
 
     def validate(self):
-        """Validate the entry."""
+        """Validate the image entry."""
         if not isinstance(self.data, bytes):
             raise ValueError("data must be bytes")
         self.metadata.validate()
@@ -73,3 +75,16 @@ class Entry:
                 raise ValueError("Each item in ocr_data must be a non-empty list")
             if not isinstance(word[0], str):
                 raise ValueError("The first item of each word in ocr_data must be a string")
+
+@dataclass
+class AnnotEntry:
+    """Represents an annotation entry in the Visor file."""
+    annotation: dict  # The annotation data in JSON format
+    ocr_data: Optional[dict] = None  # The OCR data in JSON format, optional
+
+    def validate(self):
+        """Validate the annotation entry."""
+        if not isinstance(self.annotation, dict):
+            raise ValueError("annotation must be a dictionary")
+        if self.ocr_data is not None and not isinstance(self.ocr_data, dict):
+            raise ValueError("ocr_data must be a dictionary if provided")

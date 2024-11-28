@@ -1,3 +1,5 @@
+# src/datavisor/io_ops/visor_writer.py
+
 import os
 import json
 from typing import List
@@ -8,11 +10,9 @@ import sys
 src_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(src_path)
 
-
-from config import Config, Entry
+from config import Config, ImageEntry, AnnotEntry
 from file_format import VisorFile
 from config.exceptions import IOError
-
 
 class VisorWriter:
     def __init__(self, config: Config, output_dir: str):
@@ -30,7 +30,7 @@ class VisorWriter:
         except Exception as e:
             raise IOError(f"Failed to create output directory: {str(e)}")
 
-    def write_entries(self, entries: List[Entry]):
+    def write_entries(self, entries: List):
         for entry in entries:
             if len(self.current_visor_file) >= self.config.max_entries_per_file:
                 self._write_current_file()
