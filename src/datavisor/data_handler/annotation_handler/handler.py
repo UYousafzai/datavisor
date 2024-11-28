@@ -1,4 +1,4 @@
-# src/datavisor/data_handler/annotations_handler/handler.py
+# src/datavisor/data_handler/annotation_handler/handler.py
 
 from typing import Optional
 
@@ -16,7 +16,9 @@ class AnnotationHandler(BaseDataHandler):
     def __init__(self, config: Config):
         super().__init__(config)
 
-    def process(self, annotation_data: dict, ocr_data: Optional[dict] = None) -> AnnotEntry:
+    def process(self, annotation_data: Optional[dict] = None, ocr_data: Optional[dict] = None) -> AnnotEntry:
+        if annotation_data is None:
+            raise ValidationError("annotation_data cannot be None")
         if not self.validate(annotation_data):
             raise ValidationError("Invalid annotation data")
 
@@ -27,7 +29,9 @@ class AnnotationHandler(BaseDataHandler):
         except Exception as e:
             raise ProcessingError(f"Failed to process annotation: {str(e)}")
 
-    def validate(self, data: dict) -> bool:
+    def validate(self, data: Optional[dict]) -> bool:
+        if data is None:
+            return False
         if not isinstance(data, dict):
             return False
         # Additional validation logic can be added here

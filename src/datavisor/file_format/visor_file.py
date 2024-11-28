@@ -52,11 +52,15 @@ class VisorFile:
             if not entry_header:
                 break  # End of file
 
+            if len(entry_header) < entry_header_size:
+                print("Warning: Incomplete entry header encountered.")
+                break
+
             # Unpack entry header to determine sizes
             sizes = struct.unpack(VisorEntry.ENTRY_FORMAT, entry_header)
-            data_size, metadata_size, ocr_data_size, _, entry_type = sizes
+            data_size, metadata_size, ocr_data_size, annotations_size, _, _, entry_type = sizes
 
-            total_entry_size = entry_header_size + data_size + metadata_size + ocr_data_size
+            total_entry_size = entry_header_size + data_size + metadata_size + ocr_data_size + annotations_size
             file_obj.seek(-entry_header_size, io.SEEK_CUR)
 
             entry_data = file_obj.read(total_entry_size)

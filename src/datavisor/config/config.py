@@ -1,7 +1,7 @@
 # src/datavisor/config/config.py
 
 from dataclasses import dataclass
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 
 @dataclass
 class ImageDimensions:
@@ -57,34 +57,40 @@ class EntryMetadata:
 @dataclass
 class ImageEntry:
     """Represents an image entry in the Visor file."""
-    data: bytes  # The actual image data
-    metadata: EntryMetadata
-    dimensions: ImageDimensions
-    ocr_data: List[List[Union[str, List[float]]]]  # List of words, each word is a list containing text and potentially bbox
+    data: Optional[bytes] = None  # The actual image data
+    metadata: Optional[EntryMetadata] = None
+    dimensions: Optional[ImageDimensions] = None
+    ocr_data: Optional[List[List[Union[str, List[float]]]]] = None  # Optional OCR data
+    annotations: Optional[Dict] = None  # The annotations data in JSON format, optional
 
     def validate(self):
         """Validate the image entry."""
-        if not isinstance(self.data, bytes):
-            raise ValueError("data must be bytes")
-        self.metadata.validate()
-        self.dimensions.validate()
-        if not isinstance(self.ocr_data, list):
-            raise ValueError("ocr_data must be a list")
-        for word in self.ocr_data:
-            if not isinstance(word, list) or len(word) < 1:
-                raise ValueError("Each item in ocr_data must be a non-empty list")
-            if not isinstance(word[0], str):
-                raise ValueError("The first item of each word in ocr_data must be a string")
+        if self.data is not None and not isinstance(self.data, bytes):
+            raise ValueError("data must be bytes or None")
+        if self.metadata is not None:
+            self.metadata.validate()
+        if self.dimensions is not None:
+            self.dimensions.validate()
+        if self.ocr_data is not None:
+            if not isinstance(self.ocr_data, list):
+                raise ValueError("ocr_data must be a list")
+            for word in self.ocr_data:
+                if not isinstance(word, list) or len(word) < 1:
+                    raise ValueError("Each item in ocr_data must be a non-empty list")
+                if not isinstance(word[0], str):
+                    raise ValueError("The first item of each word in ocr_data must be a string")
+        if self.annotations is not None and not isinstance(self.annotations, dict):
+            raise ValueError("annotations must be a dictionary if provided")
 
 @dataclass
 class AnnotEntry:
     """Represents an annotation entry in the Visor file."""
-    annotation: dict  # The annotation data in JSON format
+    annotation: Optional[dict] = None  # The annotation data in JSON format
     ocr_data: Optional[dict] = None  # The OCR data in JSON format, optional
 
     def validate(self):
         """Validate the annotation entry."""
-        if not isinstance(self.annotation, dict):
-            raise ValueError("annotation must be a dictionary")
+        if self.annotation is not None and not isinstance(self.annotation, dict):
+            raise ValueError("annotation must be a dictionary if provided")
         if self.ocr_data is not None and not isinstance(self.ocr_data, dict):
             raise ValueError("ocr_data must be a dictionary if provided")

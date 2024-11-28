@@ -65,7 +65,7 @@ class VisorReader:
     def __len__(self) -> int:
         return self.total_entries
 
-    def get_entry(self, index: int) -> Optional:
+    def get_entry(self, index: int):
         if index < 0 or index >= self.total_entries:
             return None
 
@@ -82,16 +82,17 @@ class VisorReader:
             return None
         if isinstance(entry, ImageEntry):
             return {
-                'original_name': entry.metadata.original_name,
-                'original_format': entry.metadata.original_format,
-                'original_width': entry.metadata.original_width,
-                'original_height': entry.metadata.original_height,
-                'word_count': entry.metadata.word_count,
-                'dimensions': (entry.dimensions.width, entry.dimensions.height),
+                'original_name': entry.metadata.original_name if entry.metadata else 'unknown',
+                'original_format': entry.metadata.original_format if entry.metadata else 'unknown',
+                'original_width': entry.metadata.original_width if entry.metadata else 0,
+                'original_height': entry.metadata.original_height if entry.metadata else 0,
+                'word_count': entry.metadata.word_count if entry.metadata else 0,
+                'dimensions': (entry.dimensions.width, entry.dimensions.height) if entry.dimensions else (0, 0),
+                'annotations': entry.annotations
             }
         elif isinstance(entry, AnnotEntry):
             return {
-                'annotation_keys': list(entry.annotation.keys()),
+                'annotation_keys': list(entry.annotation.keys()) if entry.annotation else [],
                 'ocr_data_present': entry.ocr_data is not None
             }
 

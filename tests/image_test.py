@@ -13,8 +13,6 @@ from datavisor import (
     AnnotationHandler,
 )
 
-
-
 import random
 from tqdm import tqdm
 
@@ -63,12 +61,20 @@ def create_visor_files(samples_folder, output_folder):
 
         try:
             with open(json_path, 'r') as f:
-                ocr_data = json.load(f).get('ocr_data', [])
+                json_data = json.load(f)
+                ocr_data = json_data.get('ocr_data', [])
+                annotations = json_data.get('annotations', ocr_data)  # Use ocr_data as annotations
         except FileNotFoundError:
             ocr_data = []
+            annotations = {}
 
-        # Process image data into ImageEntry
-        image_entry = image_handler.process(img_data, filename, ocr_data)
+        # Process image data into ImageEntry, including annotations
+        image_entry = image_handler.process(
+            data=img_data,
+            original_name=filename,
+            ocr_data=ocr_data,
+            annotations=annotations
+        )
         entries.append(image_entry)
 
     # Process annotation files
@@ -107,7 +113,11 @@ def read_individual_files(samples_folder):
 
         try:
             with open(json_path, 'r') as f:
-                ocr_data = json.load(f).get('ocr_data', [])
+                json_data = json.load(f)
+                ocr_data = json_data.get('ocr_data', [])
+                annotations = json_data.get('annotations', ocr_data)  # Use ocr_data as annotations
+                # Process annotations (even if same as ocr_data)
+                process_annotation(annotations)
             total_word_count += len(ocr_data)
         except FileNotFoundError:
             print(f"Warning: JSON file not found for {filename}")
@@ -137,7 +147,10 @@ def read_visor_files(output_folder):
         if isinstance(entry, ImageEntry):            
             with Image.open(io.BytesIO(entry.data)) as img:
                 processed_img = process_image(img)
-            total_word_count += len(entry.ocr_data)
+            if entry.ocr_data:
+                total_word_count += len(entry.ocr_data)
+            if entry.annotations:
+                process_annotation(entry.annotations)
             file_count += 1
         elif isinstance(entry, AnnotEntry):
             process_annotation(entry.annotation)
