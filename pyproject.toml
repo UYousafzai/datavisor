@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "datavisor"
-version = "0.2.0"
+version = "0.2.1"
 description = "DataVisor a tool for producing binary aggregated data packs for machine learning trainings"
 authors = [
     { name = "UYousafzai", email = "umaryousafzai9@gmail.com" }
